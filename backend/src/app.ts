@@ -4,6 +4,7 @@ import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/error.js';
+import { registerRequestLogger } from './middleware/logger.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { userRoutes } from './modules/users/users.routes.js';
 import { draftRoutes } from './modules/drafts/drafts.routes.js';
@@ -28,6 +29,7 @@ export async function buildApp() {
   await app.register(rateLimit, { global: false }); // opt-in per route (login)
 
   app.setErrorHandler(errorHandler);
+  registerRequestLogger(app);
 
   // Health check
   app.get('/health', async () => ({ status: 'ok', ts: new Date().toISOString() }));

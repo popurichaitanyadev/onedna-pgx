@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   ACCESS_COOKIE, REFRESH_COOKIE, cookieOptions,
-  signAccessToken, verifyRefreshToken, type TokenPayload,
+  signAccessToken, signWsTicket, verifyRefreshToken, type TokenPayload,
 } from '../../utils/jwt.js';
 import { verifyToken } from '../../middleware/auth.js';
 import { loginSchema } from './auth.validators.js';
@@ -59,5 +59,13 @@ export async function authRoutes(app: FastifyInstance) {
   // GET /api/auth/me — current session
   app.get('/me', { preHandler: verifyToken }, async (req, reply) => {
     reply.send({ user: req.user });
+  });
+
+  // GET /api/auth/ws-ticket — 60-second ticket for WebSocket auth (PRD §6.5)
+  // Token stored in HttpOnly cookie cannot be read by JS; this endpoint
+  // re-signs the payload with a 60 s expiry so the client can pass it via ?token=
+  app.get('/ws-ticket', { preHandler: verifyToken }, async (req, reply) => {
+    const ticket = signWsTicket(req.user!);
+    reply.send({ ticket });
   });
 }

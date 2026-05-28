@@ -15,7 +15,7 @@ interface NotifState {
   socket: WebSocket | null;
   notifications: Notification[];
   unread: number;
-  connect: () => void;
+  connect: () => Promise<void>;
   disconnect: () => void;
   load: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
@@ -28,13 +28,19 @@ export const useNotificationStore = create<NotifState>((set, get) => ({
   unread: 0,
 
   // PRD §6.5 — WS authenticated via JWT query param.
-  // Cookies are HttpOnly so we fetch a short-lived ws ticket via /auth/me-derived
-  // token in production. Here we connect through the same-origin proxy.
-  connect: () => {
+  // Access token is HttpOnly; fetch a 60-second ws-ticket from the API first.
+  connect: async () => {
     if (get().socket) return;
+    let ticket = '';
+    try {
+      const res = await api.get<{ ticket: string }>('/auth/ws-ticket');
+      ticket = res.ticket;
+    } catch {
+      return; // not authenticated — skip
+    }
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const base = process.env.NEXT_PUBLIC_WS_URL || `${proto}://${window.location.host}`;
-    const ws = new WebSocket(`${base}/ws`);
+    const ws = new WebSocket(`${base}/ws?token=${encodeURIComponent(ticket)}`);
 
     ws.onmessage = (ev) => {
       try {

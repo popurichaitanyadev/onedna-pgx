@@ -8,15 +8,24 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { ADMIN_NAV } from '@/lib/admin-nav';
 import { api } from '@/lib/api';
 import { useNotificationStore } from '@/stores/notificationStore';
-
+import { useUiStore, type DashboardPeriod } from '@/stores/uiStore';
 
 interface Stats { total: number; day: number; week: number; month: number; year: number; series: { bucket: string; count: number }[]; }
 interface Sub { id: string; referenceNo: string; patientName: string; submittedBy: string; submittedAt: string; }
+
+const PERIODS: { key: DashboardPeriod; label: string }[] = [
+  { key: 'all', label: 'All Time' },
+  { key: 'day', label: 'Today' },
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+  { key: 'year', label: 'This Year' },
+];
 
 function DashboardInner() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<Sub[]>([]);
+  const { dashboardPeriod, setDashboardPeriod } = useUiStore();
 
   const refresh = useCallback(async () => {
     const [{ stats }, { submissions }] = await Promise.all([
@@ -32,25 +41,51 @@ function DashboardInner() {
   // Live-refresh when a WS submission arrives (PRD §6.6)
   useEffect(() => { useNotificationStore.setState({ onNewSubmission: refresh }); }, [refresh]);
 
-  const cards = [
-    { label: 'All Time', value: stats?.total },
-    { label: 'Today', value: stats?.day },
-    { label: 'This Week', value: stats?.week },
-    { label: 'This Month', value: stats?.month },
-    { label: 'This Year', value: stats?.year },
-  ];
+  const periodValue = stats ? (
+    dashboardPeriod === 'all' ? stats.total :
+    dashboardPeriod === 'day' ? stats.day :
+    dashboardPeriod === 'week' ? stats.week :
+    dashboardPeriod === 'month' ? stats.month : stats.year
+  ) : null;
+
+  const periodLabel = PERIODS.find((p) => p.key === dashboardPeriod)?.label ?? '';
 
   return (
     <>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 20 }}>Dashboard</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14, marginBottom: 24 }}>
-        {cards.map((c) => (
-          <div key={c.label} className="card" style={{ padding: 20 }}>
-            <div style={{ fontSize: 12, color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: 0.5 }}>{c.label}</div>
-            <div style={{ fontSize: 32, fontWeight: 700, marginTop: 6, color: '#00bcd4' }}>{c.value ?? '—'}</div>
-          </div>
+      {/* Period filter toggle (PRD §6.6) */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {PERIODS.map((p) => (
+          <button key={p.key} onClick={() => setDashboardPeriod(p.key)}
+            className={dashboardPeriod === p.key ? 'btn btn-primary' : 'btn btn-ghost'}
+            style={{ fontSize: 12, padding: '6px 14px' }}>
+            {p.label}
+          </button>
         ))}
+      </div>
+
+      {/* Selected period highlight card */}
+      <div className="card" style={{ padding: 24, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div>
+          <div style={{ fontSize: 12, color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: 0.5 }}>{periodLabel}</div>
+          <div style={{ fontSize: 48, fontWeight: 700, color: '#00bcd4', lineHeight: 1.1 }}>{periodValue ?? '—'}</div>
+          <div style={{ fontSize: 12, color: '#8a8a8a', marginTop: 4 }}>submissions</div>
+        </div>
+      </div>
+
+      {/* All counts summary row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 24 }}>
+        {PERIODS.map((p) => {
+          const v = stats ? (p.key === 'all' ? stats.total : stats[p.key as keyof typeof stats] as number) : null;
+          return (
+            <div key={p.key} className="card" style={{ padding: '12px 16px', cursor: 'pointer', borderColor: dashboardPeriod === p.key ? '#00bcd4' : undefined }}
+              onClick={() => setDashboardPeriod(p.key)}>
+              <div style={{ fontSize: 11, color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: 0.5 }}>{p.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4, color: dashboardPeriod === p.key ? '#00bcd4' : '#fff' }}>{v ?? '—'}</div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="card" style={{ padding: 24, marginBottom: 24 }}>

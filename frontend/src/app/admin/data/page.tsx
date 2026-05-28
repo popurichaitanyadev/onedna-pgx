@@ -46,7 +46,7 @@ function DataInner() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
                   <tr style={{ background: '#0a0a0a', textAlign: 'left' }}>
-                    {['Reference', 'Patient', 'Collection Date', 'Physician', ''].map((h) => (
+                    {['Reference', 'Patient', 'Collection Date', 'Physician', 'Status', ''].map((h) => (
                       <th key={h} style={{ padding: '10px 16px', fontSize: 11, color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</th>
                     ))}
                   </tr>
@@ -58,6 +58,11 @@ function DataInner() {
                       <td style={{ padding: '10px 16px' }}>{s.patientName}</td>
                       <td style={{ padding: '10px 16px', color: '#8a8a8a' }}>{new Date(s.submittedAt).toLocaleDateString()}</td>
                       <td style={{ padding: '10px 16px', color: '#8a8a8a' }}>—</td>
+                      <td style={{ padding: '10px 16px' }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 99, background: 'rgba(0,188,212,0.12)', color: '#00bcd4', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          Submitted
+                        </span>
+                      </td>
                       <td style={{ padding: '10px 16px', textAlign: 'right' }}>
                         <button className="btn btn-primary" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => router.push(`/admin/data/submissions/${s.id}`)}>More Info</button>
                       </td>

@@ -22,12 +22,21 @@ export function FormWizard() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const autoSaveRef = useRef<ReturnType<typeof setInterval>>();
+  const autoSaveRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Auto-save every 2 min (PRD §6.3)
+  // Auto-save after 2 min of inactivity (PRD §6.3)
   useEffect(() => {
-    autoSaveRef.current = setInterval(() => { saveDraft().catch(() => {}); }, 120_000);
-    return () => clearInterval(autoSaveRef.current);
+    const schedule = () => {
+      clearTimeout(autoSaveRef.current);
+      autoSaveRef.current = setTimeout(() => { saveDraft().catch(() => {}); }, 120_000);
+    };
+    const EVENTS = ['mousemove', 'keydown', 'pointerdown', 'input'] as const;
+    EVENTS.forEach((e) => window.addEventListener(e, schedule, { passive: true }));
+    schedule(); // start the initial timer
+    return () => {
+      clearTimeout(autoSaveRef.current);
+      EVENTS.forEach((e) => window.removeEventListener(e, schedule));
+    };
   }, [saveDraft]);
 
   const section = SECTIONS.find((s) => s.id === currentSection)!;

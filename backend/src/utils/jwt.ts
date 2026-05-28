@@ -37,5 +37,10 @@ export function cookieOptions(maxAgeMs: number) {
   };
 }
 
+// Short-lived ticket for WebSocket auth (60 s) — same secret so verifyAccessToken works
+export function signWsTicket(payload: TokenPayload): string {
+  return jwt.sign(payload, config.JWT_ACCESS_SECRET, { expiresIn: '60s' } as SignOptions);
+}
+
 export const ACCESS_COOKIE = 'onedna_at';
 export const REFRESH_COOKIE = 'onedna_rt';
