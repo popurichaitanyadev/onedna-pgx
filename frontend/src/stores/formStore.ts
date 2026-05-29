@@ -34,10 +34,17 @@ export const useFormStore = create<FormState>((set, get) => ({
   setField: (key, value) => {
     set((s) => {
       const data = { ...s.data, [key]: value };
-      // Auto-calc BMI (PRD §6.2, AC §13.2.8)
       if (key === 'height' || key === 'weight') {
         const bmi = computeBmi(key === 'height' ? value : data.height, key === 'weight' ? value : data.weight);
         if (bmi) data.bmi = bmi;
+      }
+      if (key === 'dob' && value) {
+        const dob = new Date(value);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+        if (!isNaN(age) && age >= 0 && age <= 120) data.age = String(age);
       }
       return { data };
     });

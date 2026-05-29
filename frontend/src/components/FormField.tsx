@@ -110,7 +110,7 @@ export function FormField({ field, value, error, onChange, onToggle }: Props) {
         className={`inp ${error ? 'err' : ''}`}
         value={value ?? ''}
         placeholder={field.placeholder}
-        readOnly={field.key === 'bmi'}
+        readOnly={field.key === 'bmi' || field.key === 'age'}
         onChange={(e) => onChange(e.target.value)}
       />
       {error && <div className="errtext">{error}</div>}

@@ -7,7 +7,10 @@ async function request<T>(path: string, opts: RequestInit = {}, retry = true): P
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    headers: {
+      ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(opts.headers || {}),
+    },
   });
 
   if (res.status === 401 && retry && path !== '/auth/refresh' && path !== '/auth/login') {

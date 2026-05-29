@@ -46,19 +46,8 @@ export const useNotificationStore = create<NotifState>((set, get) => ({
       try {
         const msg = JSON.parse(ev.data);
         if (msg.type === 'FORM_SUBMITTED') {
-          // Prepend a lightweight notification; full list refetched on demand
-          set((s) => ({
-            unread: s.unread + 1,
-            notifications: [{
-              id: crypto.randomUUID(),
-              submissionId: msg.submissionId,
-              referenceNo: '',
-              patientName: msg.patientName,
-              submittedBy: msg.submittedBy,
-              isRead: false,
-              createdAt: msg.timestamp,
-            }, ...s.notifications],
-          }));
+          // Reload from API so notifications have real DB IDs (needed for markRead)
+          get().load();
           get().onNewSubmission?.();
         }
       } catch { /* noop */ }

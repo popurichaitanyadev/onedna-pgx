@@ -1,10 +1,29 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { z } from 'zod';
 import { AuthGuard } from '@/components/AuthGuard';
 import { AppShell } from '@/components/AppShell';
 import { NotificationBell } from '@/components/NotificationBell';
 import { ADMIN_NAV } from '@/lib/admin-nav';
 import { api, ApiError } from '@/lib/api';
+
+const createUserSchema = z
+  .object({
+    name: z.string().min(2, 'Full name must be at least 2 characters').max(150, 'Name too long'),
+    userId: z
+      .string()
+      .min(3, 'User ID must be at least 3 characters')
+      .max(50, 'User ID must be ≤ 50 characters')
+      .regex(/^[a-zA-Z0-9._-]+$/, 'User ID may only contain letters, numbers, . _ -'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    phone: z.string().max(20, 'Phone number too long').optional().or(z.literal('')),
+    address: z.string().max(500, 'Address too long').optional().or(z.literal('')),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 interface User {
   id: string; name: string; userId: string; phone: string | null;
@@ -28,13 +47,16 @@ function UsersInner() {
 
   const create = async () => {
     setErrors({});
-    const e: Record<string, string> = {};
-    if (form.name.trim().length < 2) e.name = 'Name is required';
-    if (form.userId.trim().length < 3) e.userId = 'User ID must be at least 3 characters';
-    if (form.password.length < 8) e.password = 'Password must be at least 8 characters';
-    if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
-    setErrors(e);
-    if (Object.keys(e).length) return;
+    const parsed = createUserSchema.safeParse(form);
+    if (!parsed.success) {
+      const e: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as string;
+        if (key && !e[key]) e[key] = issue.message;
+      }
+      setErrors(e);
+      return;
+    }
 
     setBusy(true);
     try {

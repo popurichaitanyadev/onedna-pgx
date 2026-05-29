@@ -11,7 +11,7 @@ export function NotificationBell() {
   useEffect(() => { load(); connect(); return () => disconnect(); }, [load, connect, disconnect]);
 
   const openItem = async (id: string, submissionId: string) => {
-    await markRead(id);
+    try { await markRead(id); } catch { /* navigate regardless */ }
     setOpen(false);
     if (submissionId) router.push(`/admin/data/submissions/${submissionId}`);
   };
